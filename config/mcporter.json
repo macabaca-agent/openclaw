@@ -1,4 +1,8 @@
 {
-  "mcpServers": {},
+  "mcpServers": {
+    "playwright-browser": {
+      "command": "npx -y @playwright/mcp --headless --isolated --browser chrome --executable-path /usr/bin/google-chrome"
+    }
+  },
   "imports": []
 }

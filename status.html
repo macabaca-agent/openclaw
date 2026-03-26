@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>玛卡巴卡工作台</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #171b2e;
+      --panel-2: #0d1120;
+      --text: #eef2ff;
+      --muted: #aab3d1;
+      --accent: #7c9cff;
+      --border: rgba(255,255,255,0.08);
+      --bar: linear-gradient(90deg, #7c9cff 0%, #8f6bff 100%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0d1020 0%, #12172b 100%);
+      color: var(--text);
+      padding: 20px;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    .title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 18px; }
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+    }
+    .card {
+      background: rgba(23, 27, 46, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .stack { display: grid; gap: 16px; }
+    .label { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+    .value { font-size: 18px; line-height: 1.5; font-weight: 600; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(124,156,255,0.12);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.05);
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--bar);
+      transition: width 0.35s ease;
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      gap: 12px;
+    }
+    .logbox {
+      margin: 0;
+      padding: 14px;
+      border-radius: 14px;
+      min-height: 420px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: #d8def8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow: auto;
+    }
+    .tiny { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .logbox { min-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">玛卡巴卡工作台</div>
+    <div class="subtitle">最基础可用版：先看见我有没有在干活、在干什么、做到哪。</div>
+
+    <div class="layout">
+      <div class="stack">
+        <div class="card">
+          <div class="label">当前状态</div>
+          <div id="status" class="status"><span class="dot"></span><span>加载中...</span></div>
+        </div>
+
+        <div class="card">
+          <div class="label">当前任务</div>
+          <div id="task" class="value">加载中...</div>
+        </div>
+
+        <div class="card">
+          <div class="label">进度</div>
+          <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+          <div class="progress-meta">
+            <span id="progressLabel">加载中...</span>
+            <span id="progressPercent">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">工作窗口</div>
+        <pre id="workLog" class="logbox">加载中...</pre>
+        <div class="tiny">当前先把 agent_status.json 的关键信息展开显示，后面再接更真实的日志流。</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const statusMap = {
+      idle: '空闲',
+      working: '进行中',
+      waiting: '等待回复',
+      done: '已完成',
+      blocked: '卡住了'
+    };
+
+    function safe(value, fallback = '—') {
+      return value === undefined || value === null || value === '' ? fallback : value;
+    }
+
+    async function loadStatus() {
+      try {
+        const res = await fetch(`./agent_status.json?ts=${Date.now()}`, { cache: 'no-store' });
+        const data = await res.json();
+
+        document.getElementById('status').innerHTML = `<span class="dot"></span><span>${safe(statusMap[data.status], data.status)}</span>`;
+        document.getElementById('task').textContent = safe(data.currentTask);
+
+        const percent = Math.max(0, Math.min(100, Number(data.progress?.percent || 0)));
+        document.getElementById('progressFill').style.width = `${percent}%`;
+        document.getElementById('progressPercent').textContent = `${percent}%`;
+        document.getElementById('progressLabel').textContent = safe(data.progress?.label, '暂无进度说明');
+
+        const lines = [
+          `状态: ${safe(statusMap[data.status], data.status)}`,
+          `当前任务: ${safe(data.currentTask)}`,
+          `最近结果: ${safe(data.lastResult)}`,
+          `是否需要用户: ${data.needsUser ? '是' : '否'}`,
+          `更新时间: ${safe(data.updatedAt)}`,
+          '',
+          '待办:',
+          ...((Array.isArray(data.pendingTasks) && data.pendingTasks.length)
+            ? data.pendingTasks.map((item, i) => `${i + 1}. ${item}`)
+            : ['暂无'])
+        ];
+
+        document.getElementById('workLog').textContent = lines.join('\n');
+      } catch (err) {
+        document.getElementById('task').textContent = '加载失败';
+        document.getElementById('workLog').textContent = String(err);
+      }
+    }
+
+    loadStatus();
+    setInterval(loadStatus, 2000);
+  </script>
+</body>
+</html>
