@@ -207,6 +207,12 @@ Think of it like a human reviewing their journal and updating their mental model
 
 The goal: Be helpful without being annoying. Check in a few times a day, do useful background work, but respect quiet time.
 
+## Retrieval & Reporting Rules
+
+- When sharing information gathered from websites, include the source URL(s) in the reply by default so the user can verify or open them directly.
+- For weather or similar factual lookups (forecasts, rates, quick status checks, etc.), if the first retrieval fails, explicitly say it failed and retry once using the same source or a backup source before replying.
+- If the retry also fails, report the failure clearly instead of silently omitting that part.
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
